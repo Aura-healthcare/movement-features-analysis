@@ -255,12 +255,56 @@ def wavelet(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
 
 
 #######################################################################################################################
+# fourier Fab
+#######################################################################################################################
+
+def calcul_3d_fourier(x,y,z):
+    
+    x = x - np.mean(x)
+    y = y - np.mean(y)
+    z = z - np.mean(z)
+
+    fft_x = np.abs(np.fft.fft(x))
+    fft_y = np.abs(np.fft.fft(y))
+    fft_z = np.abs(np.fft.fft(z))
+
+    return(np.linalg.norm([fft_x,fft_y,fft_z],2,axis = 0))
+
+def get_df_freq(fft,freq_acq):
+    
+    ''' 
+    Je retourne juste un df avec une colonne avec les fréquences renseignées
+    L'intérêt est que c'est insensible au changement de taille d'epoch
+    '''
+
+    nb_intervalles = len(fft) / freq_acq
+    nb_coef = len(fft)
+    col_freq = np.arange(nb_coef) / (nb_intervalles)
+    df_freq = pd.DataFrame(data = col_freq,columns=['freq'])
+    df_freq['coef'] = fft / (freq_acq * 2)
+
+    return(df_freq.iloc[0:nb_coef // 2])
+
+def get_spectrum_features(df_freq,freq_acq):
+    
+    dict_features = dict()
+    for i in range(freq_acq // 2):
+        feature_name = 'F_' + str(i) + '_' + str(i+1)
+        df_loc = df_freq[(df_freq['freq'] >= i) & (df_freq['freq'] < i + 1)]
+        feature_value = df_loc.sum()['coef']
+        dict_features[feature_name] = feature_value
+    
+    return(dict_features)
+
+
+
+#######################################################################################################################
 # temporal features function plus dictionary
 #######################################################################################################################
 
 
 
-def autocorr(signal, fs=0):
+def autocorr(signal):
 
     """Computes autocorrelation of the signal.
 
@@ -279,10 +323,10 @@ def autocorr(signal, fs=0):
     """
     signal = np.array(signal)
     return float(np.correlate(signal, signal))
-def zero_crossing(signal, fs = 0):
+def zero_crossing(signal):
     signal = signal - np.mean(signal)
     return len(np.where(np.diff(np.sign(signal)))[0])
-def mean_abs_diff(signal,fs=0):
+def mean_abs_diff(signal):
     """Computes mean absolute differences of the signal.
 
    Feature computational cost: 1
@@ -299,7 +343,7 @@ def mean_abs_diff(signal,fs=0):
 
    """
     return np.mean(np.abs(np.diff(signal)))
-def distance(signal,fs = 0):
+def distance(signal):
     """Computes signal traveled distance.
 
     Calculates the total distance traveled by the signal
@@ -320,7 +364,7 @@ def distance(signal,fs = 0):
     """
     diff_sig = np.diff(signal).astype(float)
     return np.sum([np.sqrt(1 + diff_sig ** 2)])
-def sum_abs_diff(signal,fs=0):
+def sum_abs_diff(signal):
     """Computes sum of absolute differences of the signal.
 
    Feature computational cost: 1
@@ -337,7 +381,7 @@ def sum_abs_diff(signal,fs=0):
 
    """
     return np.sum(np.abs(np.diff(signal)))
-def slope(signal,fs=0):
+def slope(signal):
     """Computes the slope of the signal.
 
     Slope is computed by fitting a linear equation to the observed data.
@@ -358,7 +402,7 @@ def slope(signal,fs=0):
     t = np.linspace(0, len(signal) - 1, len(signal))
 
     return np.polyfit(t, signal, 1)[0]
-def abs_energy(signal,fs=0):
+def abs_energy(signal):
     """Computes the absolute energy of the signal.
 
     Feature computational cost: 1
@@ -375,7 +419,7 @@ def abs_energy(signal,fs=0):
 
     """
     return np.sum(np.abs(signal) ** 2)
-def pk_pk_distance(signal,fs):
+def pk_pk_distance(signal):
     """Computes the peak to peak distance.
 
     Feature computational cost: 1
@@ -392,7 +436,7 @@ def pk_pk_distance(signal,fs):
 
     """
     return np.abs(np.max(signal) - np.min(signal))
-def entropy(signal,fs=0):
+def entropy(signal):
     
     ''' 
     fab je rajoute round de signal car mes valeurs sont continues
@@ -436,6 +480,8 @@ def entropy(signal,fs=0):
     else:
         return - np.sum(p * np.log2(p)) / np.log2(len(signal))
 
+    return(np.mean(signal))
+
 dict_time_domain_mvt_features = {'autocorr' : autocorr,
                                 'zero_crossing' : zero_crossing,
                                 'mean_abs_diff' : mean_abs_diff,
@@ -450,6 +496,19 @@ dict_time_domain_mvt_features = {'autocorr' : autocorr,
                                 'mean' : np.mean
                                 }
 
+dict_time_domain_arguments = {'autocorr' : 'signal',
+                                'zero_crossing' : 'signal',
+                                'mean_abs_diff' : 'signal',
+                                'distance' : 'signal',
+                                'sum_abs_diff' : 'signal',
+                                'slope' : 'signal',
+                                'abs_energy' : 'signal',
+                                'pk_pk_distance' : 'signal',
+                                'entropy' : 'signal',
+                                'max' : 'signal',
+                                'std' : 'signal',
+                                'mean' : 'signal'
+                                }
 
 #######################################################################################################################
 # Spectral features functions
@@ -945,7 +1004,7 @@ def spectral_entropy(signal, fs):
 
     return -np.multiply(prob, np.log2(prob)).sum() / np.log2(prob.size)
 
-def wavelet_entropy(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+def wavelet_entropy(signal, fs,function=scipy.signal.ricker, widths=np.arange(1, 10)):
     """Computes CWT entropy of the signal.
 
     Implementation details in:
@@ -983,7 +1042,6 @@ def wavelet_entropy(signal, function=scipy.signal.ricker, widths=np.arange(1, 10
 
 
 dict_frequential_mvt_features = {'spectral_distance' : spectral_distance,
-                                    'zero_crossing' : zero_crossing,
                                     'wavelet_entropy' : wavelet_entropy,
                                     'spectral_entropy' : spectral_entropy,
                                     'power_bandwidth' : power_bandwidth,
