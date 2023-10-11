@@ -2,7 +2,7 @@
 
 A repository to compute the movement features related to epilepsy seizures
 The library to execute the code are in the requirements.txt file
-Some of the features are extracted from [TSFEL library](https://tsfel.readthedocs.io/en/latest/descriptions/feature_list.html) 
+Most of the features are extracted from [TSFEL library](https://tsfel.readthedocs.io/en/latest/descriptions/feature_list.html) 
 
 
 **Movement-features-analysis** is a Python module for computing the features based on the movement of the patient
@@ -66,3 +66,13 @@ https://analyticsindiamag.com/a-tutorial-on-spectral-feature-extraction-for-audi
 **spectral Centroid :** A spectral centroid is the location of the centre of mass of the spectrum.
 
 **spectral_kurtosis :** Measures the flatness of a distribution around its mean value. 
+
+**mfcc :** https://en.wikipedia.org/wiki/Cepstrum  
+In Fourier analysis, the cepstrum is the result of computing the inverse Fourier transform (IFT) of the logarithm of the estimated signal spectrum. The method is a tool for investigating periodic structures in frequency spectra. The 
+The cepstrum can be seen as information about the rate of change in the different spectrum bands. It was originally invented for characterizing the seismic echoes resulting from earthquakes and bomb explosions.
+
+**lpcc :** LPCC is a technique that combines LP and cepstral analysis by taking the inverse Fourier transform of the log magnitude of the LPC spectrum for improved accuracy and robustness of the voice features extracted. 
+
+**wavelet_abs_mean, wavelet_energy and wwavelet_std :** The  mean,std and energy applyed to wavelet.
+
+

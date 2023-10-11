@@ -98,6 +98,51 @@ def filterbank(signal, fs, pre_emphasis=0.97, nfft=512, nfilt=40):
 
     return filter_banks  
 
+def lpc(signal, n_coeff=12):
+    """Computes the linear prediction coefficients.
+
+    Implementation details and description in:
+    https://ccrma.stanford.edu/~orchi/Documents/speaker_recognition_report.pdf
+
+    Parameters
+    ----------
+    signal : nd-array
+        Input from linear prediction coefficients are computed
+    n_coeff : int
+        Number of coefficients
+
+    Returns
+    -------
+    nd-array
+        Linear prediction coefficients
+
+    """
+
+    if signal.ndim > 1:
+        raise ValueError("Only 1 dimensional arrays are valid")
+    if n_coeff > signal.size:
+        raise ValueError("Input signal must have a length >= n_coeff")
+
+    # Calculate the order based on the number of coefficients
+    order = n_coeff - 1
+
+    # Calculate LPC with Yule-Walker
+    acf = np.correlate(signal, signal, 'full')
+
+    r = np.zeros(order+1, 'float32')
+    # Assuring that works for all type of input lengths
+    nx = np.min([order+1, len(signal)])
+    r[:nx] = acf[len(signal)-1:len(signal)+order]
+
+    smatrix = ff.create_symmetric_matrix(r[:-1], order)
+
+    if np.sum(smatrix) == 0:
+        return tuple(np.zeros(order+1))
+
+    lpc_coeffs = np.dot(np.linalg.inv(smatrix), -r[1:])
+
+    return tuple(np.concatenate(([1.], lpc_coeffs)))
+
 def calc_fft(signal, fs):
     """ This functions computes the fft of a signal.
     Parameters
@@ -323,9 +368,11 @@ def autocorr(signal):
     """
     signal = np.array(signal)
     return float(np.correlate(signal, signal))
+
 def zero_crossing(signal):
     signal = signal - np.mean(signal)
     return len(np.where(np.diff(np.sign(signal)))[0])
+
 def mean_abs_diff(signal):
     """Computes mean absolute differences of the signal.
 
@@ -1041,6 +1088,220 @@ def wavelet_entropy(signal, fs,function=scipy.signal.ricker, widths=np.arange(1,
     return w_entropy
 
 
+#######################################################################################################################
+# Spectral features functions with multiple features which numbers depending on parameters 
+#######################################################################################################################
+
+''' 
+https://fr.wikipedia.org/wiki/Cepstre 
+return num_ceps dimensions in a tuple
+'''
+
+def mfcc(signal, fs, pre_emphasis=0.97, nfft=512, nfilt=40, num_ceps=12, cep_lifter=22):
+    """Computes the MEL cepstral coefficients.
+
+    It provides the information about the power in each frequency band.
+
+    Implementation details and description on:
+    https://www.kaggle.com/ilyamich/mfcc-implementation-and-tutorial
+    https://haythamfayek.com/2016/04/21/speech-processing-for-machine-learning.html#fnref:1
+
+    Feature computational cost: 1
+
+    Parameters
+    ----------
+    signal : nd-array
+        Input from which MEL coefficients is computed
+    fs : int
+        Sampling frequency
+    pre_emphasis : float
+        Pre-emphasis coefficient for pre-emphasis filter application
+    nfft : int
+        Number of points of fft
+    nfilt : int
+        Number of filters
+    num_ceps: int
+        Number of cepstral coefficients
+    cep_lifter: int
+        Filter length
+
+    Returns
+    -------
+    nd-array
+        MEL cepstral coefficients
+
+    """
+    filter_banks = filterbank(signal, fs, pre_emphasis, nfft, nfilt)
+
+    mel_coeff = scipy.fft.dct(filter_banks, type=2, axis=0, norm='ortho')[1:(num_ceps + 1)]  # Keep 2-13
+
+    mel_coeff -= (np.mean(mel_coeff, axis=0) + 1e-8)
+
+    # liftering
+    ncoeff = len(mel_coeff)
+    n = np.arange(ncoeff)
+    lift = 1 + (cep_lifter / 2) * np.sin(np.pi * n / cep_lifter)  # cep_lifter = 22 from python_speech_features library
+
+    mel_coeff *= lift
+
+    return tuple(mel_coeff)
+
+
+''' 
+retourne un tuple avec nfreq valeurs, nfreq c'est la granularité du découpage du spectre
+Mettre pour nfreq la valeur de la fréquence d'acquisition divisée par 2
+'''
+
+def fft_mean_coeff(signal, fs, nfreq=10):
+    """Computes the mean value of each spectrogram frequency.
+
+    nfreq can not be higher than half signal length plus one.
+    When it does, it is automatically set to half signal length plus one.
+
+    Feature computational cost: 1
+
+    Parameters
+    ----------
+    signal : nd-array
+        Input from which fft mean coefficients are computed
+    fs : int
+        Sampling frequency
+    nfreq : int
+        The number of frequencies
+
+    Returns
+    -------
+    nd-array
+        The mean value of each spectrogram frequency
+
+    """
+    if nfreq > len(signal) // 2 + 1:
+        nfreq = len(signal) // 2 + 1
+
+    fmag_mean = scipy.signal.spectrogram(signal, fs, nperseg=nfreq * 2 - 2)[2].mean(1)
+
+    return tuple(fmag_mean)
+
+''' 
+return n_coeff
+https://tsfel.readthedocs.io/en/latest/_modules/tsfel/feature_extraction/features_utils.html
+
+'''
+
+def lpcc(signal, n_coeff=12):
+    """Computes the linear prediction cepstral coefficients.
+
+    Implementation details and description in:
+    http://www.practicalcryptography.com/miscellaneous/machine-learning/tutorial-cepstrum-and-lpccs/
+
+    Feature computational cost: 1
+
+    Parameters
+    ----------
+    signal : nd-array
+        Input from linear prediction cepstral coefficients are computed
+    n_coeff : int
+        Number of coefficients
+
+    Returns
+    -------
+    nd-array
+        Linear prediction cepstral coefficients
+
+    """
+    # 12-20 cepstral coefficients are sufficient for speech recognition
+    lpc_coeffs = lpc(signal, n_coeff)
+
+    if np.sum(lpc_coeffs) == 0:
+        return tuple(np.zeros(len(lpc_coeffs)))
+
+    # Power spectrum
+    powerspectrum = np.abs(np.fft.fft(lpc_coeffs)) ** 2
+    lpcc_coeff = np.fft.ifft(np.log(powerspectrum))
+
+    return tuple(np.abs(lpcc_coeff))
+
+def wavelet_abs_mean(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+    """Computes CWT absolute mean value of each wavelet scale.
+
+    Feature computational cost: 2
+
+    Parameters
+    ----------
+    signal : nd-array
+        Input from which CWT is computed
+    function :  wavelet function
+        Default: scipy.signal.ricker
+    widths :  nd-array
+        Widths to use for transformation
+        Default: np.arange(1,10)
+
+    Returns
+    -------
+    tuple
+        CWT absolute mean value
+
+    """
+    return tuple(np.abs(np.mean(wavelet(signal, function), axis=1)))
+
+
+def wavelet_std(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+    """Computes CWT std value of each wavelet scale.
+
+    Feature computational cost: 2
+
+    Parameters
+    ----------
+    signal : nd-array
+        Input from which CWT is computed
+    function :  wavelet function
+        Default: scipy.signal.ricker
+    widths :  nd-array
+        Widths to use for transformation
+        Default: np.arange(1,10)
+
+    Returns
+    -------
+    tuple
+        CWT std
+
+    """
+    return tuple((np.std(wavelet(signal, function, widths), axis=1)))
+
+def wavelet_energy(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+    """Computes CWT energy of each wavelet scale.
+
+    Implementation details:
+    https://stackoverflow.com/questions/37659422/energy-for-1-d-wavelet-in-python
+
+    Feature computational cost: 2
+
+    Parameters
+    ----------
+    signal : nd-array
+        Input from which CWT is computed
+    function :  wavelet function
+        Default: scipy.signal.ricker
+    widths :  nd-array
+        Widths to use for transformation
+        Default: np.arange(1,10)
+
+    Returns
+    -------
+    tuple
+        CWT energy
+
+    """
+    cwt = wavelet(signal, function, widths)
+    energy = np.sqrt(np.sum(cwt ** 2, axis=1) / np.shape(cwt)[1])
+
+    return tuple(energy)
+
+#######################################################################################################################
+# A dict to retrieve easily all features
+#######################################################################################################################
+
+
 dict_frequential_mvt_features = {'spectral_distance' : spectral_distance,
                                     'wavelet_entropy' : wavelet_entropy,
                                     'spectral_entropy' : spectral_entropy,
@@ -1059,6 +1320,17 @@ dict_frequential_mvt_features = {'spectral_distance' : spectral_distance,
                                     'fundamental_frequency' : fundamental_frequency,
                                     'spectral_distance' : spectral_distance
 }
+
+#######################################################################################################################
+# For each features, the numbers of spectral features depends on the signal and on the value of parameters
+#######################################################################################################################
+
+dict_frequential_mvt_multiple_features = {'mfcc' : mfcc,
+                                          'fft_mean_coeff' : fft_mean_coeff,
+                                          'lpcc' : lpcc,
+                                          'wavelet_abs_mean' : wavelet_abs_mean,
+                                          'wavelet_std' : wavelet_std,
+                                          'wavelet_energy' : wavelet_energy } 
 
 
 

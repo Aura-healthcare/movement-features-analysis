@@ -45,3 +45,21 @@ def calcul_fourier_features(dict_args_value,freq_acq):
     dict_features = ff.get_spectrum_features(df_freq,freq_acq)
 
     return(dict_features)
+
+dict_features_value = dict()
+
+def calcul_frequential_features_with_parameters(dict_args_value,dict_frequential_mvt_multiple_features = ff.dict_frequential_mvt_multiple_features)
+    
+    signal = dict_args_value['signal']
+    fs =  dict_args_value['fs']
+    dict_features_value = dict()
+
+    for feature,fonction in dict_frequential_mvt_multiple_features.items():
+
+        if feature in ['wavelet_energy','wavelet_std','wavelet_abs_mean']:
+            feature_value = fonction(signal)
+        
+        else:
+            feature_value = fonction(signal,fs)
+        
+        dict_features_value[feature] = feature_value
