@@ -1,3 +1,27 @@
+
+'''
+As most of the frequential features are directly extracted from the TSFEL library (https://tsfel.readthedocs.io/en/latest/),
+here is the offcial disclaimer
+'''
+''' 
+BSD 3-Clause License
+
+Copyright (c) 2020, Fraunhofer AICOS
+All rights reserved.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "TSFEL"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+'''
+
 import numpy as np
 import pandas as pd
 import scipy.signal
@@ -330,12 +354,21 @@ def get_df_freq(fft,freq_acq):
 
     return(df_freq.iloc[0:nb_coef // 2])
 
-def get_spectrum_features(df_freq,freq_acq):
+def get_spectrum_features(df_freq,freq_acq,l_custom_freq = [0,5,8,12,25]):
     
     dict_features = dict()
+    
     for i in range(freq_acq // 2):
         feature_name = 'F_' + str(i) + '_' + str(i+1)
         df_loc = df_freq[(df_freq['freq'] >= i) & (df_freq['freq'] < i + 1)]
+        feature_value = df_loc.sum()['coef']
+        dict_features[feature_name] = feature_value
+
+    for i in range(len(l_custom_freq) - 1):
+        low = l_custom_freq[i]
+        up = l_custom_freq[i + 1]
+        feature_name = 'F_custom_' + str(low) + '_' + str(up)
+        df_loc = df_freq[(df_freq['freq'] >= low) & (df_freq['freq'] < up)]
         feature_value = df_loc.sum()['coef']
         dict_features[feature_name] = feature_value
     

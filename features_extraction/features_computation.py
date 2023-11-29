@@ -4,6 +4,41 @@ import pandas as pd
 # import scipy.signal
 import features_functions as ff
 
+# preprocessing and pandas stuff
+def preprocess_datas_timeline(datas):
+    t0 = datas.iloc[0]['timeline']
+    datas['timeline_sec'] = [(i - t0) / 1000 for i in datas.timeline]
+    return(datas)
+
+def return_euclidean_norm(df):
+    ''' 
+    return df with new column norme
+    require columns x,y,z 
+    '''
+    x = np.asarray(df['x'])
+    y = np.asarray(df['y'])
+    z = np.asarray(df['z'])
+    df['norme'] = np.linalg.norm([x,y,z],2,axis = 0) 
+
+    return(df)
+
+def get_df_window(df,begin_sec,duration_sec,column = 'timeline_sec'):
+    ''' 
+    return a dataframe from begin_sec to begin_sec + duration_sec on column timeline_sec' 
+    '''
+    df_window = df[(df['timeline_sec'] >= begin_sec) & (df['timeline_sec'] < begin_sec + duration_sec)]
+    return df_window
+
+def update_feature_name_with_axe(dict_features, axe_name): 
+        
+        for key in dict_features.keys():
+            dict_features[axe_name + '_' + key] = dict_features.pop(key)
+        
+        return dict_features
+
+
+
+##############################################################################################################
 
 dict_features_argument = dict()
 
@@ -38,14 +73,12 @@ def calcul_frequential_features(dict_args_value,dict_frequential_mvt_features = 
 
 def calcul_fourier_features(dict_args_value,freq_acq):
     
-    signal_3d = dict_args_value['signal_3d']
-
-    x = signal_3d[0]
-    y = signal_3d[1]
-    z = signal_3d[2]
+    x = dict_args_value['x']
+    y = dict_args_value['y']
+    z = dict_args_value['z']
 
     fft = ff.calcul_3d_fourier(x,y,z)
-    df_freq = ff.get_df_freq(fft,20)
+    df_freq = ff.get_df_freq(fft,freq_acq)
     dict_features = ff.get_spectrum_features(df_freq,freq_acq)
 
     return(dict_features)
@@ -73,3 +106,62 @@ def calcul_frequential_features_with_parameters(dict_args_value,dict_frequential
             dict_features_value[feature_name] = feature_value[i]
  
     return dict_features_value 
+
+################################### Get dataframe with features ###########################################################################
+
+def get_dataframe_features(datas,window_size_sec,fs,list_features_type):
+    ''' 
+    list_features_type : ['temporal_features','frequential_features','multiple_parameters_frequential_features','fourier_spectrum_features']
+    '''
+    
+    df_features = pd.DataFrame() 
+    dict_args_value = {'fs' : fs}
+
+    ''' 
+    inside macro parameters
+    '''
+    datas = preprocess_datas_timeline(datas)
+    datas = return_euclidean_norm(datas)
+
+    file_duration_sec = round(datas['timeline_sec'].iloc[-1],0)
+    nb_row_features  = int((file_duration_sec // window_size_sec * 2) - 1 )
+
+    for row_number in range(nb_row_features):
+        # je récupère le signal pour chaque ligne de feature : df_feature_calcul_window
+        begin_sec = 5 * row_number
+        df_window = get_df_window(datas,begin_sec,window_size_sec)
+
+        dict_args_value['x'] = df_window['x']
+        dict_args_value['y'] = df_window['y']
+        dict_args_value['z'] = df_window['z']
+        dict_args_value['norme'] = df_window['norme']
+        all_features = dict()
+        
+
+        # Je calcul les features dans dict features, la fréquence ne change pas seul le signal
+        for axe in ['x','y','z','norme']:
+            
+            dict_args_value['signal'] = dict_args_value[axe]
+            
+            if 'temporal_features' in list_features_type:
+                dict_temporal_features = calcul_temporal_features(dict_args_value)
+                dict_temporal_features = update_feature_name_with_axe(dict_temporal_features,axe)
+                all_features.update(dict_temporal_features)
+
+            if 'frequential_features' in list_features_type:
+                dict_frequential_features = calcul_frequential_features(dict_args_value)
+                dict_frequential_features = update_feature_name_with_axe(dict_frequential_features,axe)
+                all_features.update(dict_frequential_features)
+
+            if 'multiple_parameters_frequential_features' in list_features_type:
+                dict_multiple_parameters_frequential_features = calcul_frequential_features_with_parameters(dict_args_value)
+                dict_multiple_parameters_frequential_features = update_feature_name_with_axe(dict_multiple_parameters_frequential_features,axe)
+                all_features.update(dict_multiple_parameters_frequential_features)
+
+        if 'fourier_spectrum_features' in list_features_type:
+            dict_fourier_spectrum_features = calcul_fourier_features(dict_args_value,fs)
+            all_features.update(dict_fourier_spectrum_features)
+
+        df_features = df_features.append(all_features,ignore_index=True)
+    
+    return(df_features)
