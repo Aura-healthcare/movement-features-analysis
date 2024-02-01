@@ -5,6 +5,7 @@ import pandas as pd
 import features_functions as ff
 import argparse
 
+
 # preprocessing and pandas stuff
 def preprocess_datas_timeline(datas):
     t0 = datas.iloc[0]['timeline']
@@ -31,8 +32,9 @@ def get_df_window(df,begin_sec,duration_sec,column = 'timeline_sec'):
     return df_window
 
 def update_feature_name_with_axe(dict_features, axe_name): 
-        
-        for key in dict_features.keys():
+
+        key_list = list(dict_features.keys())
+        for key in key_list:
             dict_features[axe_name + '_' + key] = dict_features.pop(key)
         
         return dict_features

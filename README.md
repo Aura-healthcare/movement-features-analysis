@@ -4,6 +4,21 @@ A repository to compute the movement features related to epilepsy seizures <br /
 The library to execute the code are in the requirements.txt file <br />
 Most of the spectral features are extracted from [TSFEL library](https://tsfel.readthedocs.io/en/latest/descriptions/feature_list.html) 
 
+## Getting started
+
+**Prerequisites**: start conda environment and install dependencies
+
+```bash
+conda create --name myenv python=3.8
+conda activate myenv
+pip install -r requirements.txt
+```
+
+Run the library 
+```bash
+cd features_extraction
+python features_computation.py 10 "./../datas/datas_test_feature_extraction.csv" "all"
+```
 
 **Movement-features-analysis** is a Python module for computing the features based on the movement of the patient
 

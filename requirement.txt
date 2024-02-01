@@ -1,6 +1,0 @@
-
-python >= 3.7.0
-numpy>=1.15.1
-pandas>=0.13.1
-scipy >= 1.1.0
-matplotlib >= >=2.2.0
