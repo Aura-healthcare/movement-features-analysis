@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "movement-features-analysis"
+version = "0.1.0"
+description = "A package to compute state of the art movement features"
+readme = "README.md"
+requires-python = "3.12"
+dependencies = [
+    "numpy>=1.24.4",
+    "pandas>=1.5.3",
+    "python-dateutil>=2.8.2",
+    "pytz>=2023.4",
+    "scipy>=1.10.1",
+    "six>=1.16.0",
+    "tzdata>=2023.4",
+]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["features_extraction"]
