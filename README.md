@@ -34,42 +34,42 @@ The developement of this librairy started in /date/ as part of [Aura Healthcare]
 
 ###  Temporal features  
 
-| **Name of the feature** | **Description** | 
-
-| Autocorr | Computes auto-correlation of the signal | <br />
-| Zero_crossing | Compute the number of time the signal cross zero | <br />
-| Mean_abs_diff | Computes mean of absolute difference of the signal | <br />
-| Distance | Computes signal traveled distance | <br />
-| Sum_aps_diff | Computes sum of absolute difference of the signal | <br />
-| Slope | Computes the slope of the signal | <br />
-| Abs_energy | Compute the absolute energy of the signal | <br />
-| Pk_pk_distance | Distance between the max and the min of the signal (peak to peak) | <br />
-| Entropy | Computes the entropy of the signal using the Shannon entropy | <br />
+| **Name of the feature** | **Description** |
+|------------------------|-----------------|
+| Autocorr | Computes auto-correlation of the signal |
+| Zero_crossing | Compute the number of time the signal cross zero |
+| Mean_abs_diff | Computes mean of absolute difference of the signal |
+| Distance | Computes signal traveled distance |
+| Sum_aps_diff | Computes sum of absolute difference of the signal |
+| Slope | Computes the slope of the signal |
+| Abs_energy | Compute the absolute energy of the signal |
+| Pk_pk_distance | Distance between the max and the min of the signal (peak to peak) |
+| Entropy | Computes the entropy of the signal using the Shannon entropy |
 
 ###  Frequency features  
 
 CWT = continuous wavelet transform
 
-| **Name of the feature** | **Description** | 
-
-| spectral_distance |  Computes the signal spectral distance | <br />
-| wavelet_entropy | Computes CWT entropy of the signal | <br />
-| spectral_entropy |  Computes the signal spectral entropy | <br />
-| power_bandwidth |  Computes power spectrum density bandwidth of the signa | <br />
-| human_range_energy |  Computes the human range energy ratio | <br />
-| spectral_roll_on |  Computes the spectral roll-on of the signal | <br />
-| spectral_roll_off |  Computes the spectral roll-off of the signal | <br />
-| spectral_variation |  Computes the amount of variation of the spectrum along time | <br />
-| 'spectral_slope' |  Computes the spectral slope | <br />
-| spectral_kurtosis' |  Computes the spectral_kurtosis' | <br />
-| spectral_decrease |  Represents the amount of decreasing of the spectra amplitude | <br />
-| spectral_centroid |  Computes the barycenter of the spectrum' | <br />
-| median_frequency |  Computes median frequency of the signal | <br />
-| max_power_spectrum |  Computes the max of the dft | <br />
-| max_frequency |  Computes the frequency of the max power | <br />
-| fundamental_frequency |  Computes the fundamental_frequency (ie first harmonic in music) | <br />
-| power in band |  Computes the power of the signal in the selected band of frequency  | <br /> 
-| relative power in band |  Computes the relativ power (eg divide by the Norm L2 of the signal) of the signal in the selected band of frequency  |  
+| **Name of the feature** | **Description** |
+|------------------------|-----------------|
+| spectral_distance | Computes the signal spectral distance |
+| wavelet_entropy | Computes CWT entropy of the signal |
+| spectral_entropy | Computes the signal spectral entropy |
+| power_bandwidth | Computes power spectrum density bandwidth of the signa |
+| human_range_energy | Computes the human range energy ratio |
+| spectral_roll_on | Computes the spectral roll-on of the signal |
+| spectral_roll_off | Computes the spectral roll-off of the signal |
+| spectral_variation | Computes the amount of variation of the spectrum along time |
+| spectral_slope | Computes the spectral slope |
+| spectral_kurtosis | Computes the spectral_kurtosis |
+| spectral_decrease | Represents the amount of decreasing of the spectra amplitude |
+| spectral_centroid | Computes the barycenter of the spectrum |
+| median_frequency | Computes median frequency of the signal |
+| max_power_spectrum | Computes the max of the dft |
+| max_frequency | Computes the frequency of the max power |
+| fundamental_frequency | Computes the fundamental_frequency (ie first harmonic in music) |
+| power in band | Computes the power of the signal in the selected band of frequency |
+| relative power in band | Computes the relativ power (eg divide by the Norm L2 of the signal) of the signal in the selected band of frequency |
 
 
 **Few definitions :**  
