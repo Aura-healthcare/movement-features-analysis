@@ -25,6 +25,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 import pandas as pd
 import scipy.signal
+import pywt
 
 
 #######################################################################################################################
@@ -291,25 +292,78 @@ def create_symmetric_matrix(acf, order=11):
 
     return smatrix
 
-def wavelet(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
-    """Computes CWT (continuous wavelet transform) of the signal.
+# def wavelet(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+#     """Computes CWT (continuous wavelet transform) of the signal.
 
-    Parameters
-    ----------
-    signal : nd-array
-        Input from which CWT is computed
-    function :  wavelet function
-        Default: scipy.signal.ricker
-    widths :  nd-array
-        Widths to use for transformation
-        Default: np.arange(1,10)
+#     Parameters
+#     ----------
+#     signal : nd-array
+#         Input from which CWT is computed
+#     function :  wavelet function
+#         Default: scipy.signal.ricker
+#     widths :  nd-array
+#         Widths to use for transformation
+#         Default: np.arange(1,10)
 
-    Returns
-    -------
-    nd-array
-        The result of the CWT along the time axis
-        matrix with size (len(widths),len(signal))
+#     Returns
+#     -------
+#     nd-array
+#         The result of the CWT along the time axis
+#         matrix with size (len(widths),len(signal))
 
+#     """
+
+#     if isinstance(function, str):
+#         function = eval(function)
+
+#     if isinstance(widths, str):
+#         widths = eval(widths)
+
+#     cwt = scipy.signal.cwt(signal, function, widths)
+
+#     return cwt
+
+# CHANGED WITH 
+
+# def wavelet(signal, function = 'mexh', widths=np.arange(1, 10)):
+
+#     if isinstance(widths, str):
+#         widths = eval(widths)
+
+#     cwt = pywt.cwt(signal, widths, function )
+#     print("cqt = ",cwt)
+#     print(cwt[0])
+
+#     return cwt
+
+###################"""""" 08-01-2026 ############
+from scipy.signal import convolve
+
+def ricker(points, a):
+    """Retourne une ondelette de Ricker de longueur 'points' et de largeur 'a'."""
+    x = np.linspace(-(a * np.sqrt(6)), a * np.sqrt(6), points)
+    x = (2 / (np.sqrt(3 * a) * (np.pi ** 0.25))) * (1 - (x / a) ** 2) * np.exp(-(x ** 2) / (2 * a ** 2))
+    return x
+
+# def wavelet(signal, widths=np.arange(1, 10)):
+#     cwt = np.zeros((len(widths), len(signal)))
+#     for i, width in enumerate(widths):
+#         psi = ricker(len(signal), width)
+#         cwt[i, :] = np.convolve(signal, psi, mode='same')
+#     return cwt
+
+
+def wavelet(signal, function=ricker, widths=np.arange(1, 10)):
+    """
+    Calcule la transformée en ondelettes continues (CWT) avec une ondelette générique.
+
+    Paramètres :
+    - signal : tableau 1D, le signal d'entrée
+    - function : fonction qui génère l'ondelette (doit prendre (points, a) en arguments)
+    - widths : tableau de largeurs pour l'ondelette
+
+    Retourne :
+    - cwt : tableau 2D, la transformée en ondelettes
     """
 
     if isinstance(function, str):
@@ -318,10 +372,11 @@ def wavelet(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
     if isinstance(widths, str):
         widths = eval(widths)
 
-    cwt = scipy.signal.cwt(signal, function, widths)
-
+    cwt = np.zeros((len(widths), len(signal)))
+    for i, width in enumerate(widths):
+        psi = function(len(signal), width)
+        cwt[i, :] = convolve(signal, psi, mode='same')
     return cwt
-
 
 #######################################################################################################################
 # fourier Fab
@@ -1084,7 +1139,7 @@ def spectral_entropy(signal, fs):
 
     return -np.multiply(prob, np.log2(prob)).sum() / np.log2(prob.size)
 
-def wavelet_entropy(signal, fs,function=scipy.signal.ricker, widths=np.arange(1, 10)):
+def wavelet_entropy(signal, fs,function=ricker, widths=np.arange(1, 10)):
     """Computes CWT entropy of the signal.
 
     Implementation details in:
@@ -1254,7 +1309,7 @@ def lpcc(signal, n_coeff=12):
 
     return tuple(np.abs(lpcc_coeff))
 
-def wavelet_abs_mean(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+def wavelet_abs_mean(signal, function=ricker, widths=np.arange(1, 10)):
     """Computes CWT absolute mean value of each wavelet scale.
 
     Feature computational cost: 2
@@ -1278,7 +1333,7 @@ def wavelet_abs_mean(signal, function=scipy.signal.ricker, widths=np.arange(1, 1
     return tuple(np.abs(np.mean(wavelet(signal, function), axis=1)))
 
 
-def wavelet_std(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+def wavelet_std(signal, function= ricker, widths=np.arange(1, 10)):
     """Computes CWT std value of each wavelet scale.
 
     Feature computational cost: 2
@@ -1301,7 +1356,7 @@ def wavelet_std(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
     """
     return tuple((np.std(wavelet(signal, function, widths), axis=1)))
 
-def wavelet_energy(signal, function=scipy.signal.ricker, widths=np.arange(1, 10)):
+def wavelet_energy(signal, function=ricker, widths=np.arange(1, 10)):
     """Computes CWT energy of each wavelet scale.
 
     Implementation details:

@@ -1,15 +1,20 @@
 
 import numpy as np
 import pandas as pd
-# import scipy.signal
 import features_functions as ff
 import argparse
-
+from datetime import datetime
+import os
 
 # preprocessing and pandas stuff
+
 def preprocess_datas_timeline(datas):
-    t0 = datas.iloc[0]['timeline']
-    datas['timeline_sec'] = [(i - t0) / 1000 for i in datas.timeline]
+
+    l_time = [t[0:-5] for t in datas['time']]
+    l_time = [datetime.strptime(t, '%Y-%m-%d_%H:%M:%S.%f').timestamp() * 1000 for t in l_time]
+    
+    t0 = l_time[0]
+    datas['timeline_sec'] = [(i - t0) / 1000 for i in l_time]
     return(datas)
 
 def return_euclidean_norm(df):
@@ -128,11 +133,26 @@ def get_dataframe_features(datas,window_size_sec,fs,list_features_type):
 
     file_duration_sec = round(datas['timeline_sec'].iloc[-1],0)
     nb_row_features  = int((file_duration_sec // window_size_sec * 2) - 1 )
+    print('file_duration_sec = ',file_duration_sec)
+    print('nb_row_features to calculate = ', nb_row_features)
+
+    nb_uncalculated,nb_zeros = 0,0
 
     for row_number in range(nb_row_features):
+
+        if row_number % 100 == 0:
+            print("row_number = ", row_number)
+
         # je récupère le signal pour chaque ligne de feature : df_feature_calcul_window
         begin_sec = 5 * row_number
         df_window = get_df_window(datas,begin_sec,window_size_sec)
+        
+        if len(df_window) < 100:
+            nb_uncalculated += 1
+            continue
+        
+        nb_zeros += len(df_window.loc[df_window['norme']==0])
+        df_window = df_window.loc[df_window['norme']!=0]
 
         dict_args_value['x'] = df_window['x']
         dict_args_value['y'] = df_window['y']
@@ -164,41 +184,76 @@ def get_dataframe_features(datas,window_size_sec,fs,list_features_type):
         if 'fourier_spectrum_features' in list_features_type:
             dict_fourier_spectrum_features = calcul_fourier_features(dict_args_value,fs)
             all_features.update(dict_fourier_spectrum_features)
+            all_features['time'] = df_window['time'].iloc[0]
 
-        df_features = df_features.append(all_features,ignore_index=True)
-    
-    return(df_features)
+        df_features = df_features._append(all_features,ignore_index=True)
+        
+
+    print('nb_uncalculated = ',nb_uncalculated)
+
+    return(df_features,nb_zeros)
 
 ##############################################################Parsing and extraction #######################################################################################################
 
-default_list_features_type = ['temporal_features','frequential_features','multiple_parameters_frequential_features','fourier_spectrum_features']
-dir_datas = '../datas/'
-datas_test = 'datas_test_feature_extraction.csv'
+default_list_features_type = ['temporal_features','fourier_spectrum_features','frequential_features'] # ,'multiple_parameters_frequential_features'] # ['temporal_features','fourier_spectrum_features'] #,'frequential_features','multiple_parameters_frequential_features','fourier_spectrum_features']
+
+dir_datas = '../datas/datas_csv_acc/'
+dir_features = '../datas/features/csv_features_test/'
+
+window_size_sec = 10
+filename = '01-003.acc.csv'
+datas_path = dir_datas + filename
 
 
+parser = argparse.ArgumentParser(description="Chemins pour charger et sauvegarder les fichiers.")
 
-parser = argparse.ArgumentParser()
+parser.add_argument('-i',
+    "--datas_path",
+    required=True,
+    type=str,
+    help="Chemin vers le fichier datas"
+)
 
-parser.add_argument("window_size_sec", help="the window size in second on which you calculate your features",type=int)
-parser.add_argument("datas_path",nargs='?', const = 1, default = dir_datas + datas_test, help="absolute or relaive path to your datas",type = str)
-parser.add_argument("features_type", nargs='?', const = 1, default = 'all',help="list of features type, default = all")
+parser.add_argument('-o',
+    "--save_path",
+    required=True,
+    type=str,
+    help="Chemin vers la sauvegarde"
+)
+
+
+args = parser.parse_args()
+
+# parser.add_argument("datas_path", const = 1, help="absolute or relaive path to your datas",type = str)
+# default = datas_path, 
+# parser.add_argument("window_size_sec", default = 10, help="the window size in second on which you calculate your features",type=int)
+# parser.add_argument("features_type", nargs='?', const = 1, default = 'all',help="list of features type, default = all")
+# if args.features_type == 'all':
+#     list_features_type = default_list_features_type
+# else:
+#     list_features_type = args.features_type
 
 args = parser.parse_args()
 
 if __name__ == '__main__':
     
-    window_size_sec = args.window_size_sec
+    window_size_sec = 10 # args.window_size_sec
     datas_path = args.datas_path
+    save_path = args.save_path
 
-    if args.features_type == 'all':
-        list_features_type = default_list_features_type
-    else:
-        list_features_type = args.features_type
+    datas = pd.read_csv(datas_path ,index_col = 0)
+    nb_lignes = 200000
+    datas = datas.iloc[0:nb_lignes]
 
-    datas = pd.read_csv(datas_path,index_col = 0)
-    fs = 45
-    df = get_dataframe_features(datas,window_size_sec,fs,list_features_type)
+    print('shape datas = ', np.shape(datas))
+    datas.rename({'acc_x' : 'x','acc_y' : 'y','acc_z' : 'z'},axis = 1, inplace=True)
+    datas[['x', 'y','z']] = datas[['x', 'y','z']].fillna(value=0)
+    fs = 50
+    datas['time'] = datas.index
+
+    df, nb_zeros = get_dataframe_features(datas,window_size_sec,fs,default_list_features_type)
     print('nb lignes features calculatesd = ', np.shape(df)[0])
-    print('nb features per lignes = ', np.shape(df)[1])  
+    print('Nb total norme == zero lines = ', nb_zeros)
 
-    df.to_csv(dir_datas + 'features_{}_ws_{}.csv'.format(datas_test,window_size_sec))
+    df.to_csv(save_path)
+    print(save_path, ' saved')
