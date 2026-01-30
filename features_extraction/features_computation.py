@@ -147,12 +147,15 @@ def get_dataframe_features(datas,window_size_sec,fs,list_features_type):
         begin_sec = 5 * row_number
         df_window = get_df_window(datas,begin_sec,window_size_sec)
         
-        if len(df_window) < 100:
+        if len(df_window) < 50:
             nb_uncalculated += 1
             continue
+
+        df_window_zero = df_window.loc[df_window['norme']==0]
+        len_zero = len(df_window_zero) 
         
-        nb_zeros += len(df_window.loc[df_window['norme']==0])
-        df_window = df_window.loc[df_window['norme']!=0]
+        if len_zero > 40:
+            continue
 
         dict_args_value['x'] = df_window['x']
         dict_args_value['y'] = df_window['y']
@@ -191,7 +194,7 @@ def get_dataframe_features(datas,window_size_sec,fs,list_features_type):
 
     print('nb_uncalculated = ',nb_uncalculated)
 
-    return(df_features,nb_zeros)
+    return(df_features)
 
 ##############################################################Parsing and extraction #######################################################################################################
 
@@ -201,9 +204,8 @@ dir_datas = '../datas/datas_csv_acc/'
 dir_features = '../datas/features/csv_features_test/'
 
 window_size_sec = 10
-filename = '01-003.acc.csv'
+filename = '01-002.acc.csv'
 datas_path = dir_datas + filename
-
 
 parser = argparse.ArgumentParser(description="Chemins pour charger et sauvegarder les fichiers.")
 
@@ -221,9 +223,6 @@ parser.add_argument('-o',
     help="Chemin vers la sauvegarde"
 )
 
-
-args = parser.parse_args()
-
 # parser.add_argument("datas_path", const = 1, help="absolute or relaive path to your datas",type = str)
 # default = datas_path, 
 # parser.add_argument("window_size_sec", default = 10, help="the window size in second on which you calculate your features",type=int)
@@ -233,16 +232,15 @@ args = parser.parse_args()
 # else:
 #     list_features_type = args.features_type
 
-args = parser.parse_args()
+# args = parser.parse_args()
 
 if __name__ == '__main__':
     
     window_size_sec = 10 # args.window_size_sec
-    datas_path = args.datas_path
-    save_path = args.save_path
-
+    # datas_path = args.datas_path
+    # save_path = args.save_path
     datas = pd.read_csv(datas_path ,index_col = 0)
-    nb_lignes = 200000
+    nb_lignes = 2000000
     datas = datas.iloc[0:nb_lignes]
 
     print('shape datas = ', np.shape(datas))
@@ -251,9 +249,9 @@ if __name__ == '__main__':
     fs = 50
     datas['time'] = datas.index
 
-    df, nb_zeros = get_dataframe_features(datas,window_size_sec,fs,default_list_features_type)
-    print('nb lignes features calculatesd = ', np.shape(df)[0])
-    print('Nb total norme == zero lines = ', nb_zeros)
-
-    df.to_csv(save_path)
+    df_results = get_dataframe_features(datas,window_size_sec,fs,default_list_features_type)
+    print('nb lignes features calculatesd = ', np.shape(df_results)[0])
+    
+    save_path = '/home/aura-fabien/movement-features-analysis/features/computation_15_01/debug_features_01-002_24_06.acc.csv'
+    df_results.to_csv(save_path)
     print(save_path, ' saved')
