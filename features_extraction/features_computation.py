@@ -140,7 +140,7 @@ def get_dataframe_features(datas,window_size_sec,fs,list_features_type):
 
     for row_number in range(nb_row_features):
 
-        if row_number % 100 == 0:
+        if row_number % 2000 == 0:
             print("row_number = ", row_number)
 
         # je récupère le signal pour chaque ligne de feature : df_feature_calcul_window
@@ -200,28 +200,6 @@ def get_dataframe_features(datas,window_size_sec,fs,list_features_type):
 
 default_list_features_type = ['temporal_features','fourier_spectrum_features','frequential_features'] # ,'multiple_parameters_frequential_features'] # ['temporal_features','fourier_spectrum_features'] #,'frequential_features','multiple_parameters_frequential_features','fourier_spectrum_features']
 
-dir_datas = '../datas/datas_csv_acc/'
-dir_features = '../datas/features/csv_features_test/'
-
-window_size_sec = 10
-filename = '01-002.acc.csv'
-datas_path = dir_datas + filename
-
-parser = argparse.ArgumentParser(description="Chemins pour charger et sauvegarder les fichiers.")
-
-parser.add_argument('-i',
-    "--datas_path",
-    required=True,
-    type=str,
-    help="Chemin vers le fichier datas"
-)
-
-parser.add_argument('-o',
-    "--save_path",
-    required=True,
-    type=str,
-    help="Chemin vers la sauvegarde"
-)
 
 # parser.add_argument("datas_path", const = 1, help="absolute or relaive path to your datas",type = str)
 # default = datas_path, 
@@ -232,17 +210,32 @@ parser.add_argument('-o',
 # else:
 #     list_features_type = args.features_type
 
-# args = parser.parse_args()
-
 if __name__ == '__main__':
     
     window_size_sec = 10 # args.window_size_sec
-    # datas_path = args.datas_path
-    # save_path = args.save_path
-    datas = pd.read_csv(datas_path ,index_col = 0)
-    nb_lignes = 2000000
-    datas = datas.iloc[0:nb_lignes]
 
+    parser = argparse.ArgumentParser(description="Chemins pour charger et sauvegarder les fichiers.")
+
+    parser.add_argument('-i',
+        "--datas_path",
+        required=True,
+        type=str,
+        help="Chemin vers le fichier datas"
+    )
+
+    parser.add_argument('-o',
+        "--save_path",
+        required=True,
+        type=str,
+        help="Chemin vers la sauvegarde"
+    )
+
+    args = parser.parse_args()
+    datas_path = args.datas_path
+    save_path = args.save_path
+    datas = pd.read_csv(datas_path ,index_col = 0)
+
+    print('file : ', datas_path)
     print('shape datas = ', np.shape(datas))
     datas.rename({'acc_x' : 'x','acc_y' : 'y','acc_z' : 'z'},axis = 1, inplace=True)
     datas[['x', 'y','z']] = datas[['x', 'y','z']].fillna(value=0)
@@ -252,6 +245,5 @@ if __name__ == '__main__':
     df_results = get_dataframe_features(datas,window_size_sec,fs,default_list_features_type)
     print('nb lignes features calculatesd = ', np.shape(df_results)[0])
     
-    save_path = '/home/aura-fabien/movement-features-analysis/features/computation_15_01/debug_features_01-002_24_06.acc.csv'
     df_results.to_csv(save_path)
     print(save_path, ' saved')
