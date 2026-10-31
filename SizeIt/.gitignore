@@ -1,0 +1,8 @@
+# données et résultats : jamais versionnés
+donnees/
+*.parquet
+*.joblib
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.tmp

@@ -4,6 +4,13 @@ A repository to compute the movement features related to epilepsy seizures <br /
 The library to execute the code are in the requirements.txt file <br />
 Most of the spectral features are extracted from [TSFEL library](https://tsfel.readthedocs.io/en/latest/descriptions/feature_list.html) 
 
+## SizeIt : détection personnalisée des crises (SeizeIT2)
+
+Le dossier [`SizeIt/`](SizeIt/README.md) contient le pipeline complet, depuis les données brutes SeizeIT2 :
+features de l'accélération (calculées avec la librairie de ce dépôt), fusion avec les features cardiaques (HRV),
+identification des crises, découpage apprentissage / test, modèle personnalisé par patient, logique d'alarme,
+évaluation et visualisation interactive. Voir [SizeIt/README.md](SizeIt/README.md).
+
 ## Getting started
 
 **Prerequisites**: start conda environment and install dependencies
